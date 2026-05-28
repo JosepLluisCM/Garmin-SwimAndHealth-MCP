@@ -8,6 +8,28 @@ from typing import Any, Dict, List, Optional, Union
 # The garmin_client will be set by the main file
 garmin_client = None
 
+# Reverse maps for curating swim steps on read (id -> human key).
+_STROKE_TYPE_BY_ID = {
+    1: "choice",
+    2: "backstroke",
+    3: "breaststroke",
+    4: "drill",
+    5: "butterfly",
+    6: "freestyle",
+    7: "im",
+    8: "mixed",
+    9: "im_by_round",
+    10: "reverse_im_by_round",
+}
+_EQUIPMENT_BY_ID = {
+    1: "swim_fins",
+    2: "swim_kickboard",
+    3: "swim_paddles",
+    4: "swim_pull_buoy",
+    5: "swim_snorkel",
+}
+_DRILL_TYPE_BY_ID = {1: "kick", 2: "pull", 3: "drill"}
+
 
 def configure(client):
     """Configure the module with the Garmin client instance"""
@@ -25,7 +47,8 @@ def _fix_hr_zone_step(step: dict) -> None:
     Custom HR bpm ranges (e.g. targetValueOne=105, targetValueTwo=143) are left
     unchanged — these are legitimate custom heart rate targets in Garmin Connect.
     """
-    target_type = step.get('targetType', {})
+    # targetType may be absent OR explicitly None (swim steps use None); guard both.
+    target_type = step.get('targetType') or {}
     target_key = target_type.get('workoutTargetTypeKey', '')
 
     if target_key == 'heart.rate.zone' and 'zoneNumber' not in step:
@@ -180,6 +203,23 @@ def _curate_workout_step(step: dict) -> dict:
         prefix='secondary_',
     )
 
+    # Swim stroke / equipment (omit the "none"/0 placeholders).
+    stroke_type = step.get('strokeType')
+    if isinstance(stroke_type, dict):
+        stroke_id = stroke_type.get('strokeTypeId')
+        if stroke_id:
+            curated['stroke'] = _STROKE_TYPE_BY_ID.get(stroke_id, stroke_id)
+    equipment_type = step.get('equipmentType')
+    if isinstance(equipment_type, dict):
+        equip_id = equipment_type.get('equipmentTypeId')
+        if equip_id:
+            curated['equipment'] = _EQUIPMENT_BY_ID.get(equip_id, equip_id)
+    drill_type = step.get('drillType')
+    if isinstance(drill_type, dict):
+        drill_id = drill_type.get('drillTypeId')
+        if drill_id:
+            curated['drill_type'] = _DRILL_TYPE_BY_ID.get(drill_id, drill_id)
+
     # Strength training exercise info
     if step.get('category'):
         curated['category'] = step.get('category')
@@ -194,12 +234,24 @@ def _curate_workout_step(step: dict) -> dict:
     # Repeat info for repeat steps
     if step.get('type') == 'RepeatGroupDTO':
         curated['repeat_count'] = step.get('numberOfIterations')
+        if step.get('skipLastRestStep'):
+            curated['skip_last_rest'] = True
         nested_steps = step.get('workoutSteps', [])
         if nested_steps:
             curated['steps'] = [_curate_workout_step(s) for s in nested_steps]
             curated['step_count'] = len(nested_steps)
 
     return {k: v for k, v in curated.items() if v is not None}
+
+
+def _add_pool_length(curated: dict, source: dict) -> None:
+    """Copy pool length (swim) from a raw workout/segment into the curated dict."""
+    pool_length = source.get('poolLength')
+    if pool_length:
+        curated['pool_length'] = pool_length
+        unit = source.get('poolLengthUnit')
+        if isinstance(unit, dict) and unit.get('unitKey'):
+            curated['pool_length_unit'] = unit.get('unitKey')
 
 
 def _curate_workout_segment(segment: dict) -> dict:
@@ -216,6 +268,8 @@ def _curate_workout_segment(segment: dict) -> dict:
         curated['estimated_duration_seconds'] = segment.get('estimatedDurationInSecs')
     if segment.get('estimatedDistanceInMeters'):
         curated['estimated_distance_meters'] = segment.get('estimatedDistanceInMeters')
+
+    _add_pool_length(curated, segment)
 
     # Workout steps - the actual content of the segment
     steps = segment.get('workoutSteps', [])
@@ -247,6 +301,8 @@ def _curate_workout_details(workout: dict) -> dict:
     # Optional fields
     if workout.get('description'):
         details['description'] = workout.get('description')
+
+    _add_pool_length(details, workout)
 
     # Handle both field name variants (regular vs training plan workouts)
     duration = workout.get('estimatedDuration') or workout.get('estimatedDurationInSecs')

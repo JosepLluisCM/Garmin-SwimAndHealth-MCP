@@ -1,10 +1,28 @@
-[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/taxuspt-garmin-mcp-badge.png)](https://mseep.ai/app/taxuspt-garmin-mcp)
+# Garmin SwimAndHealth MCP Server
 
-# Garmin MCP Server
+> **This is a personal fork**, focused on detailed **swimming workout creation** and **health / performance monitoring**.
+> Forked from the original [**Taxuspt/garmin_mcp**](https://github.com/Taxuspt/garmin_mcp).
+> Garmin's API is accessed via the [python-garminconnect](https://github.com/cyberjunky/python-garminconnect) library.
 
 This Model Context Protocol (MCP) server connects to Garmin Connect and exposes your fitness and health data to Claude and other MCP-compatible clients.
 
-Garmin's API is accessed via the awesome [python-garminconnect](https://github.com/cyberjunky/python-garminconnect) library.
+## What this fork adds
+
+Compared to the upstream original, this fork is centered on swimming and health, and adds:
+
+- **`create_swim_workout`** — a dedicated, detailed swim builder with the correct Garmin swim mappings: strokes (freestyle, back, breast, fly, IM, IM-by-round, reverse-IM, mixed, choice, drill), **drill subtypes** (kick / pull / drill), **equipment** (paddles, pull buoy, kickboard, fins, snorkel), **duration** by distance / time / lap-button, **timed rest vs send-off** intervals, **skip-last-rest**, **pool length**, and **intensity targets** (exact pace, effort level, CSS offset).
+- **Swim-aware read path** — `get_workout_by_id` now keeps `stroke`, `equipment`, `drill type`, `pool length` and `skip-last-rest` (previously stripped on read), so swim workouts round-trip correctly.
+- **High-level workout builders** — `create_swim_workout`, `create_walk_run_workout`, `create_z2_walk_workout`, `create_strength_workout`, plus `schedule_week`; no hand-written workout JSON needed.
+- **Tool filtering** — `GARMIN_ENABLED_TOOLS` / `GARMIN_DISABLED_TOOLS` env vars to limit which tools register and keep the LLM's context lean.
+- **Curated responses & API fixes** — trimmed payloads for list/detail views, plus fixes for Garmin quirks (HR-zone targets, repeat-group corruption, swim `targetType: null`).
+
+> All swim mappings were reverse-engineered and verified against a live Garmin account (25 m pool).
+
+## Current status
+
+- ✅ **Swim workout creation** and **health / performance reading**: working and verified against a live account.
+- 🖥️ **Runs locally** as an MCP server (Claude Desktop + Claude Code) via `uv` — no packaging required; always runs the latest local code.
+- 📦 **DXT packaging** for multi-machine install is **prepared but not yet packaged/published** — single local machine for now.
 
 ## Features
 

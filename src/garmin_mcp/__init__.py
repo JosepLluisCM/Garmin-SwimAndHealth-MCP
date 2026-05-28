@@ -61,6 +61,15 @@ def get_mfa() -> str:
     return input("Enter MFA code: ")
 
 
+# --- Local .env support (disabled for now; enable in the future) -------------
+# python-dotenv is already a dependency. Uncomment the two lines below to load a
+# local .env at startup, so env config like GARMIN_DISABLED_TOOLS applies without
+# the DXT. Create a .env next to the project, e.g.:
+#   GARMIN_DISABLED_TOOLS=get_pregnancy_summary,get_menstrual_data_for_date,...
+# from dotenv import load_dotenv
+# load_dotenv()
+# -----------------------------------------------------------------------------
+
 # Get credentials from environment
 email = os.environ.get("GARMIN_EMAIL")
 email_file = os.environ.get("GARMIN_EMAIL_FILE")

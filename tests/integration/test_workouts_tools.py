@@ -138,6 +138,59 @@ async def test_get_workout_by_id_tool_handles_swim_secondary_targets(
 
 
 @pytest.mark.asyncio
+async def test_get_workout_by_id_tool_surfaces_swim_stroke_equipment_pool(
+    app_with_workouts, mock_garmin_client
+):
+    """Read path must keep stroke, equipment, pool length and skip-last-rest."""
+    import json as json_module
+
+    swim = {
+        "workoutId": 999,
+        "workoutName": "Rich Swim",
+        "sportType": {"sportTypeId": 4, "sportTypeKey": "swimming"},
+        "poolLength": 25.0,
+        "poolLengthUnit": {"unitId": 1, "unitKey": "meter", "factor": 100.0},
+        "workoutSegments": [{
+            "segmentOrder": 1,
+            "sportType": {"sportTypeId": 4, "sportTypeKey": "swimming"},
+            "workoutSteps": [{
+                "type": "RepeatGroupDTO",
+                "stepOrder": 1,
+                "stepType": {"stepTypeId": 6, "stepTypeKey": "repeat"},
+                "numberOfIterations": 8,
+                "skipLastRestStep": True,
+                "workoutSteps": [{
+                    "type": "ExecutableStepDTO",
+                    "stepOrder": 1,
+                    "stepType": {"stepTypeId": 3, "stepTypeKey": "interval"},
+                    "endCondition": {"conditionTypeId": 3, "conditionTypeKey": "distance"},
+                    "endConditionValue": 100.0,
+                    "targetType": None,
+                    "strokeType": {"strokeTypeId": 6, "strokeTypeKey": "freestyle"},
+                    "equipmentType": {"equipmentTypeId": 4, "equipmentTypeKey": "swim_pull_buoy"},
+                }],
+            }],
+        }],
+    }
+    mock_garmin_client.get_workout_by_id.return_value = swim
+
+    result = await app_with_workouts.call_tool(
+        "get_workout_by_id", {"workout_id": 999}
+    )
+    data = json_module.loads(result[0][0].text)
+
+    assert data["pool_length"] == 25.0
+    assert data["pool_length_unit"] == "meter"
+
+    repeat = data["segments"][0]["steps"][0]
+    assert repeat["skip_last_rest"] is True
+
+    interval = repeat["steps"][0]
+    assert interval["stroke"] == "freestyle"
+    assert interval["equipment"] == "swim_pull_buoy"
+
+
+@pytest.mark.asyncio
 async def test_get_workout_by_id_tool_ignores_malformed_target_blocks(
     app_with_workouts, mock_garmin_client
 ):
