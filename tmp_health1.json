@@ -1,0 +1,91 @@
+{
+  "training_status": {
+    "userId": 71522682,
+    "mostRecentVO2Max": {
+      "userId": 71522682,
+      "generic": {
+        "calendarDate": "2026-05-16",
+        "vo2MaxPreciseValue": 39.1,
+        "vo2MaxValue": 39.0,
+        "fitnessAge": null,
+        "fitnessAgeDescription": null,
+        "maxMetCategory": 0
+      },
+      "cycling": null,
+      "heatAltitudeAcclimation": null
+    },
+    "mostRecentTrainingLoadBalance": {
+      "userId": 71522682,
+      "metricsTrainingLoadBalanceDTOMap": {
+        "3624936338": {
+          "calendarDate": "2026-05-28",
+          "deviceId": 3624936338,
+          "monthlyLoadAerobicLow": 659.95544,
+          "monthlyLoadAerobicHigh": 512.8496,
+          "monthlyLoadAnaerobic": 275.57434,
+          "monthlyLoadAerobicLowTargetMin": 244,
+          "monthlyLoadAerobicLowTargetMax": 664,
+          "monthlyLoadAerobicHighTargetMin": 524,
+          "monthlyLoadAerobicHighTargetMax": 944,
+          "monthlyLoadAnaerobicTargetMin": 139,
+          "monthlyLoadAnaerobicTargetMax": 419,
+          "trainingBalanceFeedbackPhrase": "AEROBIC_HIGH_SHORTAGE",
+          "primaryTrainingDevice": true
+        }
+      },
+      "recordedDevices": [
+        {
+          "deviceId": 3624936338,
+          "imageURL": "https://res.garmin.com/en/products/010-02810-13/v/c1_01_md.png",
+          "deviceName": "Forerunner 265S",
+          "category": 0
+        }
+      ]
+    },
+    "mostRecentTrainingStatus": {
+      "userId": 71522682,
+      "latestTrainingStatusData": {
+        "3624936338": {
+          "calendarDate": "2026-05-28",
+          "sinceDate": "2026-05-27",
+          "weeklyTrainingLoad": null,
+          "trainingStatus": 5,
+          "timestamp": 1779946458000,
+          "deviceId": 3624936338,
+          "loadTunnelMin": null,
+          "loadTunnelMax": null,
+          "loadLevelTrend": null,
+          "sport": null,
+          "subSport": null,
+          "fitnessTrendSport": "NONE",
+          "fitnessTrend": 0,
+          "trainingStatusFeedbackPhrase": "RECOVERY_1",
+          "trainingPaused": false,
+          "acuteTrainingLoadDTO": {
+            "acwrPercent": 29,
+            "acwrStatus": "LOW",
+            "acwrStatusFeedback": "FEEDBACK_1",
+            "dailyTrainingLoadAcute": 392,
+            "maxTrainingLoadChronic": 816.0,
+            "minTrainingLoadChronic": 435.20000000000005,
+            "dailyTrainingLoadChronic": 544,
+            "dailyAcuteChronicWorkloadRatio": 0.7
+          },
+          "primaryTrainingDevice": true
+        }
+      },
+      "recordedDevices": [
+        {
+          "deviceId": 3624936338,
+          "imageURL": "https://res.garmin.com/en/products/010-02810-13/v/c1_01_md.png",
+          "deviceName": "Forerunner 265S",
+          "category": 0
+        }
+      ],
+      "showSelector": false,
+      "lastPrimarySyncDate": "2026-05-28"
+    },
+    "heatAltitudeAcclimationDTO": null
+  },
+  "max_metrics": []
+}

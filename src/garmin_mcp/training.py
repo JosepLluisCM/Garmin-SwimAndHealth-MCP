@@ -69,6 +69,14 @@ def _map_contributor(
     return result
 
 
+def _format_pace_per_100m(mps: float) -> Optional[str]:
+    """Convert a swim speed in m/s to a mm:ss pace-per-100m string."""
+    if not mps:
+        return None
+    total = int(round(100.0 / mps))
+    return f"{total // 60}:{total % 60:02d}"
+
+
 def register_tools(app):
     """Register all training-related tools with the MCP server app"""
 
@@ -682,6 +690,88 @@ def register_tools(app):
             return json.dumps(curated, indent=2)
         except Exception as e:
             return f"Error retrieving lactate threshold data: {str(e)}"
+
+    @app.tool()
+    async def get_performance_profile() -> str:
+        """Get the athlete's full performance profile in a single call.
+
+        Reads /userprofile-service/userprofile/personal-information and returns the
+        key performance + body metrics together: Critical Swim Speed (CSS), VO2 max
+        (running/cycling/rowing), cycling FTP, lactate threshold HR, Garmin activity
+        class, plus height, weight, age and gender. Personal contact data (email,
+        country) is intentionally omitted.
+        """
+        try:
+            data = garmin_client.connectapi(
+                "/userprofile-service/userprofile/personal-information"
+            )
+            if not data:
+                return "No personal information found"
+
+            bp = data.get("biometricProfile") or {}
+            info = data.get("userInfo") or {}
+
+            curated: Dict[str, Any] = {}
+
+            css = bp.get("criticalSwimSpeed")
+            if css is not None:
+                mps = css / 1000.0  # Garmin stores CSS in mm/s
+                curated["critical_swim_speed_mps"] = round(mps, 3)
+                curated["critical_swim_speed_pace_per_100m"] = _format_pace_per_100m(mps)
+                curated["critical_swim_speed_raw_mm_s"] = css
+
+            curated["vo2_max_running"] = bp.get("vo2Max")
+            curated["vo2_max_cycling"] = bp.get("vo2MaxCycling")
+            curated["vo2_max_rowing"] = bp.get("vo2MaxRowing")
+            curated["functional_threshold_power_watts"] = bp.get(
+                "functionalThresholdPower"
+            )
+            curated["lactate_threshold_hr_bpm"] = bp.get("lactateThresholdHeartRate")
+            curated["activity_class"] = bp.get("activityClass")
+
+            height = bp.get("height")
+            if height is not None:
+                curated["height_cm"] = round(height, 1)
+            weight = bp.get("weight")
+            if weight is not None:
+                curated["weight_kg"] = round(weight / 1000.0, 1)  # grams -> kg
+
+            curated["age"] = info.get("age")
+            curated["gender"] = info.get("genderType")
+
+            curated = {k: v for k, v in curated.items() if v is not None}
+
+            return json.dumps(curated, indent=2)
+        except Exception as e:
+            return f"Error retrieving performance profile: {str(e)}"
+
+    @app.tool()
+    async def get_critical_swim_speed() -> str:
+        """Get the athlete's Critical Swim Speed (CSS).
+
+        CSS is the swim equivalent of threshold pace and the core anchor for swim
+        workout targets. Read from
+        /userprofile-service/userprofile/personal-information
+        (biometricProfile.criticalSwimSpeed, stored in mm/s). Returns CSS in m/s and
+        as pace per 100m. This matches Garmin's Performance Stats > Critical Swim Speed.
+        """
+        try:
+            data = garmin_client.connectapi(
+                "/userprofile-service/userprofile/personal-information"
+            )
+            css = ((data or {}).get("biometricProfile") or {}).get("criticalSwimSpeed")
+            if css is None:
+                return "No Critical Swim Speed (CSS) found"
+
+            mps = css / 1000.0  # Garmin stores CSS in mm/s
+            curated = {
+                "critical_swim_speed_mps": round(mps, 3),
+                "critical_swim_speed_pace_per_100m": _format_pace_per_100m(mps),
+                "raw_mm_per_s": css,
+            }
+            return json.dumps(curated, indent=2)
+        except Exception as e:
+            return f"Error retrieving Critical Swim Speed: {str(e)}"
 
     @app.tool()
     async def request_reload(date: str) -> str:
